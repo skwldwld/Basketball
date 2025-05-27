@@ -8,8 +8,6 @@ let ballResetPending = false;
 let throwStartTime = null; 
 let isThrown = false;
 let world, ballBody;
-let score = 0;
-let scoreText = document.getElementById('score');
 
 const hoopPieces = [];
 const segments = 32;
@@ -18,6 +16,13 @@ const ringHeight = 0.1;
 const pieceSize = 0.2;
 const hoopY = 1;
 const hoopZ = -3;
+
+let throwPower = 0;
+let powerScaling = 0.4;
+let powerMax = 100;
+let isCharging = false;
+
+let remainingThrows;
 
 init();
 animate();
@@ -108,8 +113,32 @@ function init() {
   world.addBody(ballBody);
 
   // 이벤트
-  renderer.domElement.addEventListener('mousedown', onMouseDown);
-  renderer.domElement.addEventListener('mouseup', onMouseUp);
+
+
+  document.addEventListener('keydown', (event) => {
+    if (event.code === 'Space' && !isCharging && !isThrown) {
+      isCharging = true;
+      throwPower = 0;
+    }
+  });
+
+  document.addEventListener('keyup', (event) => {
+    if (event.code === 'Space' && isCharging && !isThrown) {
+      const vx = 0;
+      const vy = throwPower * 0.7;
+      const vz = -throwPower;
+
+      ballBody.velocity.set(vx, vy, vz);
+      
+      isThrown = true;
+      throwStartTime = Date.now();
+      ballResetPending = true;
+
+      isCharging = false;
+    }
+  });
+  // renderer.domElement.addEventListener('mousedown', onMouseDown);
+  // renderer.domElement.addEventListener('mouseup', onMouseUp);
   window.addEventListener('resize', onWindowResize);
 
   // 디버깅 헬퍼
@@ -120,27 +149,27 @@ function init() {
 }
 
 let mouseStart = null;
-function onMouseDown(event) {
-  if (!isThrown) {
-    mouseStart = { x: event.clientX, y: event.clientY };
-  }
-}
+// function onMouseDown(event) {
+//   if (!isThrown) {
+//     mouseStart = { x: event.clientX, y: event.clientY };
+//   }
+// }
 
-function onMouseUp(event) {
-  if (!isThrown && mouseStart) {
-    const dx = event.clientX - mouseStart.x;
-    const dy = mouseStart.y - event.clientY;
-    const powerScale = 0.05;
-    const vx = dx * powerScale;
-    const vy = Math.min(dy * powerScale, 15);
-    const vz = -Math.max(dy * powerScale, 1);
-    ballBody.velocity.set(vx, vy, vz);
+// function onMouseUp(event) {
+//   if (!isThrown && mouseStart) {
+//     const dx = event.clientX - mouseStart.x;
+//     const dy = mouseStart.y - event.clientY;
+//     const powerScale = 0.05;
+//     const vx = dx * powerScale;
+//     const vy = Math.min(dy * powerScale, 15);
+//     const vz = -Math.max(dy * powerScale, 1);
+//     ballBody.velocity.set(vx, vy, vz);
 
-    isThrown = true;
-    throwStartTime = Date.now();     
-    ballResetPending = true;         
-  }
-}
+//     isThrown = true;
+//     throwStartTime = Date.now();     
+//     ballResetPending = true;         
+//   }
+// }
 
 const storedBalls = localStorage.getItem('selectedBalls');
 const throwCountRaw = localStorage.getItem('throwCount');
@@ -148,6 +177,10 @@ const throwCountRaw = localStorage.getItem('throwCount');
 let selectedBalls = storedBalls ? JSON.parse(storedBalls) : [];
 let throwCount = throwCountRaw ? JSON.parse(throwCountRaw) : 3;
 let currentPlayerIndex = 0;
+
+remainingThrows = Array(selectedBalls.length).fill(throwCount);
+
+
 
 // 점수 초기화
 selectedBalls.forEach(p => {
@@ -179,6 +212,13 @@ function updateScoreUI() {
   });
 }
 
+function updateRemainingThrowsUI() {
+  const playerRows = document.querySelectorAll("#player-list tr");
+  playerRows.forEach((row, index) => {
+    row.cells[2].textContent = remainingThrows[index];
+  });
+}
+
 function resetBall() {
   ballBody.position.set(0, 1, 2);
   ballBody.velocity.set(0, 0, 0);
@@ -187,8 +227,20 @@ function resetBall() {
   throwStartTime = null;
   ballResetPending = false;  
 
+  // 공 개수 감소
+  remainingThrows[currentPlayerIndex] -= 1;
+  // UI 업데이트
+  updateRemainingThrowsUI();
   // 다음 플레이어로 이동
   currentPlayerIndex = (currentPlayerIndex + 1) % selectedBalls.length;
+
+    // 모든 플레이어가 0개 남으면 결과 페이지로 이동
+  if (remainingThrows.every(t => t <= 0)) {
+    localStorage.setItem('selectedBalls', JSON.stringify(selectedBalls)); // 점수 저장
+    window.location.href = '../../result.html'; // 결과 화면으로 이동
+    return;
+  }
+
 }
 
 function onWindowResize() {
@@ -197,9 +249,14 @@ function onWindowResize() {
   renderer.setSize(window.innerWidth, window.innerHeight);
 }
 
+
 function animate() {
   requestAnimationFrame(animate);
   world.step(1 / 60);
+
+  if (isCharging && throwPower < powerMax) {
+    throwPower += powerScaling;
+  }
 
   basketball.position.copy(ballBody.position);
   basketball.quaternion.copy(ballBody.quaternion);
@@ -223,6 +280,8 @@ function animate() {
   if (isThrown && ballResetPending && Date.now() - throwStartTime > 3000) {
     resetBall();
   }
+
+  window.remainingThrows = remainingThrows;
 
   controls.update();
   renderer.render(scene, camera);

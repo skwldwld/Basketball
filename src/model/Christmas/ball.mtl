@@ -1,0 +1,42 @@
+# 3ds Max Wavefront OBJ Exporter v0.97b - (c)2007 guruware
+# File Created: 29.11.2011 10:29:35
+
+newmtl _ballMaterial__1
+	Ns 85.0000
+	Ni 1.5000
+	d 1.0000
+	Tr 0.0000
+	Tf 1.0000 1.0000 1.0000 
+	illum 2
+	Ka 1.0000 1.0000 1.0000
+	Kd 0.8784 0.8196 0.6392
+	Ks 0.4275 0.4137 0.3588
+	Ke 0.0000 0.0000 0.0000
+
+newmtl _ball07___Default
+	Ns 60.0000
+	Ni 1.5000
+	d 1.0000
+	Tr 0.0000
+	Tf 1.0000 1.0000 1.0000 
+	illum 2
+	Ka 1.0000 1.0000 1.0000
+	Kd 1.0000 1.0000 1.0000
+	Ks 0.4410 0.4410 0.4410
+	Ke 0.0000 0.0000 0.0000
+	map_Ka 11565ball_diffuse.jpg
+	map_Kd 11565ball_diffuse.jpg
+
+newmtl _ballmatHook
+	Ns 55.0000
+	Ni 1.5000
+	d 1.0000
+	Tr 0.0000
+	Tf 1.0000 1.0000 1.0000 
+	illum 2
+	Ka 1.0000 1.0000 1.0000
+	Kd 1.0000 1.0000 1.0000
+	Ks 0.4500 0.4500 0.4500
+	Ke 0.0000 0.0000 0.0000
+	map_Ka Plane001DiffuseMap.jpg
+	map_Kd Plane001DiffuseMap.jpg

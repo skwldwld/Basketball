@@ -1,0 +1,5 @@
+1- Look at the nodes images in NODES folder
+
+2- Apply the textures found in TEXTURES folder as the folder tab NODES
+
+3 Enjoy it!
