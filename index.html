@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>HOOPS</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500&display=swap" rel="stylesheet">
+<style>
+    body {
+        font-family: 'Orbitron', monospace;
+        background: black;
+        color: white;
+        height: 100vh;
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+    }
+    h1 {
+        font-size: 4rem;
+        margin-bottom: 2rem;
+        text-shadow: 0 0 15px #ff6b6b;
+    }
+    .input-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        background-color: #1a1a1a;
+        padding: 2rem;
+        border-radius: 20px;
+        box-shadow: 0 0 10px rgba(255, 107, 107, 0.3);
+    }
+    label {
+        font-size: 1.3rem;
+        margin-bottom: 0.5rem;
+    }
+    input[type="number"] {
+        font-size: 1.5rem;
+        width: 120px;
+        text-align: center;
+        border-radius: 8px;
+        border: none;
+        padding: 0.4rem;
+        margin-bottom: 1rem;
+    }
+    button {
+        cursor: pointer;
+        background: #ff6b6b;
+        border: none;
+        color: white;
+        padding: 0.6rem 2rem;
+        border-radius: 30px;
+        font-size: 1.2rem;
+        margin-top: 1.2rem;
+        transition: background 0.3s;
+    }
+    button:hover {
+        background: #ff4a4a;
+    }
+    #players-list {
+        margin-top: 2rem;
+        text-align: left;
+        width: 320px;
+        max-height: 200px;
+        overflow-y: auto;
+        border: 1px solid #ff6b6b;
+        padding: 1rem;
+        border-radius: 12px;
+        font-size: 1.2rem;
+        background-color: #1a1a1a;
+        display: none;
+    }
+</style>
+</head>
+<body>
+    <h1>Ball</h1>
+
+    <div class="input-container">
+        <label for="player-count">플레이어 수 (2~8):</label>
+        <input type="number" id="player-count" min="2" max="8" value="2" />
+        <label for="throw-count">공 던지는 횟수 (1~5):</label>
+        <input type="number" id="throw-count" min="1" max="5" value="3" />
+
+        <button id="assign-btn">🎲 랜덤으로 공 정하기</button>
+    </div>
+
+    <div id="players-list"></div>
+
+    <div id="result-modal" style="display:none; position: fixed; top: 0; left: 0; 
+    width: 100%; height: 100%; background-color: rgba(0,0,0,0.8); 
+     justify-content: center; align-items: center; z-index: 999;">
+        <div style="background: #1a1a1a; padding: 2rem; border-radius: 20px; text-align: center; width: 80%; max-width: 400px;">
+            <h2 style="color: #ff6b6b; margin-bottom: 1rem;">🎉 공이 정해졌어요!</h2>
+            <div id="modal-results" style="color: white; margin-bottom: 1.5rem;"></div>
+            <button id="go-to-game" style="background: #ff6b6b; border: none; padding: 0.7rem 2rem; font-size: 1.2rem; border-radius: 30px; color: white; cursor: pointer;">게임하러가기</button>
+        </div>
+    </div>
+
+<script>
+    const balls = [
+        '농구공',
+        '포켓몬볼',
+        '크리스마스 장식',
+        '털실',
+        '볼링공',
+        '럭비공',
+        '돌맹이',
+        '방울토마토'
+    ];
+
+    const playerCountInput = document.getElementById('player-count');
+    const throwCountInput = document.getElementById('throw-count');
+    const assignBtn = document.getElementById('assign-btn');
+    const playersList = document.getElementById('players-list');
+    const resultModal = document.getElementById('result-modal');
+    const modalResults = document.getElementById('modal-results');
+    const goToGameBtn = document.getElementById('go-to-game');
+
+    assignBtn.addEventListener('click', () => {
+        const playerCount = parseInt(playerCountInput.value);
+        if (isNaN(playerCount) || playerCount < 2 || playerCount > 8) {
+            alert('플레이어 수는 2명 이상 8명 이하로 선택해주세요.');
+            return;
+        }
+
+        playersList.innerHTML = '';
+        playersList.style.display = 'block';
+
+        const assignments = [];
+        for (let i = 0; i < playerCount; i++) {
+            const randomIndex = Math.floor(Math.random() * balls.length);
+            assignments.push({ name: `플레이어 ${i + 1}`, ball: balls[randomIndex] });
+        }
+
+        assignments.forEach(p => {
+            playersList.innerHTML += `${p.name}: ${p.ball}<br/>`;
+        });
+
+        modalResults.innerHTML = assignments.map(p => `${p.name}: ${p.ball}`).join('<br>');
+
+        // 전체 플레이어 공 결과를 localStorage에 JSON으로 저장
+        localStorage.setItem('selectedBalls', JSON.stringify(assignments));
+        localStorage.setItem('throwCount', JSON.stringify(throwCountInput.value));
+
+        // 모달 표시
+        resultModal.style.display = 'flex';
+    });
+
+    goToGameBtn.addEventListener('click', () => {
+        window.location.href = './src/game.html'; 
+    });
+</script>
+</body>
+</html>
