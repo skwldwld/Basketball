@@ -1,0 +1,11 @@
+Model Information:
+* title:	Paper Ball (free)
+* source:	https://sketchfab.com/3d-models/paper-ball-free-7a8b607042f64046a93877fe36082f3e
+* author:	Lesca 3D-Scan (https://sketchfab.com/Lesca)
+
+Model License:
+* license type:	CC-BY-NC-4.0 (http://creativecommons.org/licenses/by-nc/4.0/)
+* requirements:	Author must be credited. No commercial use.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Paper Ball (free)" (https://sketchfab.com/3d-models/paper-ball-free-7a8b607042f64046a93877fe36082f3e) by Lesca 3D-Scan (https://sketchfab.com/Lesca) licensed under CC-BY-NC-4.0 (http://creativecommons.org/licenses/by-nc/4.0/)
