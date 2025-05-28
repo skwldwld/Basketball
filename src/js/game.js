@@ -1,13 +1,37 @@
 import * as THREE from 'three';
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import * as CANNON from 'cannon-es';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
 let scene, camera, renderer, controls;
 let basketball;
 let ballResetPending = false;
 let throwStartTime = null; 
 let isThrown = false;
-let world, ballBody;
+let world;
+let ballBody = null; // 공의 물리 바디
+let currentPlayerIndex = 0;
+
+const ballModelMap = {
+  '농구공': 'basketball',
+  '볼링공': 'bowlingball',
+  '종이공': 'paperball',
+  '포켓몬볼': 'pokeball',
+  '돌맹이': 'rock',
+  '눈덩이': 'snowball',
+  '방울토마토': 'tomato',
+};
+
+const ballSizeMap = {
+  '농구공': 0.01,
+  '볼링공': 0.4,
+  '종이공': 3,
+  '포켓몬볼': 0.01,
+  '돌맹이': 2,
+  '눈덩이': 0.1,
+  '방울토마토': 10,
+};
 
 const hoopPieces = [];
 const segments = 32;
@@ -22,16 +46,23 @@ let powerScaling = 0.4;
 let powerMax = 100;
 let isCharging = false;
 
-let remainingThrows;
+let selectedBalls = [];
+let remainingThrows = [];
+let throwCount = 3;
+
+
 
 init();
 animate();
 
 function init() {
+  selectedBalls = JSON.parse(localStorage.getItem('selectedBalls') || '[]');
+  throwCount = JSON.parse(localStorage.getItem('throwCount') || '3');
+
   scene = new THREE.Scene();
 
   camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-  camera.position.set(0, 5, 10);
+  camera.position.set(0, 5, 12);
 
   renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setSize(window.innerWidth, window.innerHeight);
@@ -97,24 +128,19 @@ function init() {
     scene.add(mesh);
   }
 
-  // 농구공
-  const ballGeometry = new THREE.SphereGeometry(0.3, 32, 32);
-  const ballMaterial = new THREE.MeshStandardMaterial({ color: 0xFF4500 });
-  basketball = new THREE.Mesh(ballGeometry, ballMaterial);
-  basketball.position.set(0, 1, 2);
-  scene.add(basketball);
+  loadPlayerBallModel(currentPlayerIndex);
 
-  const ballShape = new CANNON.Sphere(0.3);
-  ballBody = new CANNON.Body({
-    mass: 0.2,
-    position: new CANNON.Vec3(0, 1, 2),
-  });
-  ballBody.addShape(ballShape);
-  world.addBody(ballBody);
+  // 점수 초기화
+selectedBalls.forEach(p => {
+  if (p.score === undefined) {
+    p.score = 0; // 기존 데이터에 점수 추가
+  }
+});
+
+  // 각 플레이어별 남은 공 수 초기화
+  remainingThrows = Array(selectedBalls.length).fill(throwCount);
 
   // 이벤트
-
-
   document.addEventListener('keydown', (event) => {
     if (event.code === 'Space' && !isCharging && !isThrown) {
       isCharging = true;
@@ -137,8 +163,6 @@ function init() {
       isCharging = false;
     }
   });
-  // renderer.domElement.addEventListener('mousedown', onMouseDown);
-  // renderer.domElement.addEventListener('mouseup', onMouseUp);
   window.addEventListener('resize', onWindowResize);
 
   // 디버깅 헬퍼
@@ -148,49 +172,47 @@ function init() {
   scene.add(gridHelper);
 }
 
-let mouseStart = null;
-// function onMouseDown(event) {
-//   if (!isThrown) {
-//     mouseStart = { x: event.clientX, y: event.clientY };
-//   }
-// }
+function loadPlayerBallModel(playerIndex) {
+  if (basketball) scene.remove(basketball);
+  if (ballBody) world.removeBody(ballBody);
 
-// function onMouseUp(event) {
-//   if (!isThrown && mouseStart) {
-//     const dx = event.clientX - mouseStart.x;
-//     const dy = mouseStart.y - event.clientY;
-//     const powerScale = 0.05;
-//     const vx = dx * powerScale;
-//     const vy = Math.min(dy * powerScale, 15);
-//     const vz = -Math.max(dy * powerScale, 1);
-//     ballBody.velocity.set(vx, vy, vz);
+  const ballName = selectedBalls[playerIndex].ball;
+  const modelFolder = ballModelMap[ballName];
+  const ballSize = ballSizeMap[ballName] || 0.3;  // 기본 크기 설정
 
-//     isThrown = true;
-//     throwStartTime = Date.now();     
-//     ballResetPending = true;         
-//   }
-// }
-
-const storedBalls = localStorage.getItem('selectedBalls');
-const throwCountRaw = localStorage.getItem('throwCount');
-
-let selectedBalls = storedBalls ? JSON.parse(storedBalls) : [];
-let throwCount = throwCountRaw ? JSON.parse(throwCountRaw) : 3;
-let currentPlayerIndex = 0;
-
-remainingThrows = Array(selectedBalls.length).fill(throwCount);
-
-
-
-// 점수 초기화
-selectedBalls.forEach(p => {
-  if (p.score === undefined) {
-    p.score = 0; // 기존 데이터에 점수 추가
+  if (!modelFolder) {
+    console.warn(`알 수 없는 공 이름: ${ballName}`);
+    return;
   }
-});
 
-// 업데이트된 데이터를 다시 저장
-localStorage.setItem('selectedBalls', JSON.stringify(selectedBalls));
+  const gltfLoader = new GLTFLoader();
+  gltfLoader.setPath(`src/models/${modelFolder}/`); // 폴더 경로 (gltf, bin, 텍스처들이 있는 곳)
+  gltfLoader.load('scene.gltf', (gltf) => {
+    basketball = gltf.scene;
+
+    gltf.scene.position.set(0, 0, 0);
+    gltf.scene.rotation.set(0, 0, 0);
+
+    basketball.scale.set(ballSize, ballSize, ballSize); // 필요 시 크기 조정
+    basketball.position.set(0, 3, 5); // 필요 시 위치 조정
+    scene.add(basketball);
+    console.log('GLTF 모델 로드 완료');
+
+    // if (!ballBody) {  
+      const ballShape = new CANNON.Sphere(ballSize);
+      ballBody = new CANNON.Body({
+        mass: 0.2,
+        position: new CANNON.Vec3(0, 3, 5),
+      });
+      ballBody.addShape(ballShape);
+      world.addBody(ballBody);
+    // }
+  }, undefined, (error) => {
+    console.error('GLTF 모델 로드 실패:', error);
+  });
+}
+
+
 
 function updateScore(playerName) {
   const player = selectedBalls.find(p => p.name === playerName);
@@ -220,26 +242,39 @@ function updateRemainingThrowsUI() {
 }
 
 function resetBall() {
-  ballBody.position.set(0, 1, 2);
+  if (!remainingThrows || remainingThrows.length === 0) {
+    console.log('remainingThrows가 아직 초기화되지 않았습니다.');
+    return;
+  }
+
+  ballBody.position.set(0, 3, 5);
   ballBody.velocity.set(0, 0, 0);
   ballBody.angularVelocity.set(0, 0, 0);
+
   isThrown = false;
   throwStartTime = null;
   ballResetPending = false;  
 
+
   // 공 개수 감소
-  remainingThrows[currentPlayerIndex] -= 1;
+  remainingThrows[currentPlayerIndex]--;
+
   // UI 업데이트
   updateRemainingThrowsUI();
-  // 다음 플레이어로 이동
-  currentPlayerIndex = (currentPlayerIndex + 1) % selectedBalls.length;
 
-    // 모든 플레이어가 0개 남으면 결과 페이지로 이동
+  // 다음 플레이어로 전환
+  currentPlayerIndex = (currentPlayerIndex + 1) % selectedBalls.length;
+  
+  // 모든 플레이어가 0개 남으면 결과 페이지로 이동
   if (remainingThrows.every(t => t <= 0)) {
     localStorage.setItem('selectedBalls', JSON.stringify(selectedBalls)); // 점수 저장
     window.location.href = '../../result.html'; // 결과 화면으로 이동
     return;
   }
+
+  // 남은 공 정보 저장
+  // localStorage.setItem('remainingThrows', JSON.stringify(remainingThrows));
+  loadPlayerBallModel(currentPlayerIndex);
 
 }
 
@@ -258,8 +293,10 @@ function animate() {
     throwPower += powerScaling;
   }
 
-  basketball.position.copy(ballBody.position);
-  basketball.quaternion.copy(ballBody.quaternion);
+  if (basketball && ballBody) {
+    basketball.position.copy(ballBody.position);
+    // basketball.quaternion.copy(ballBody.quaternion);
+  }
 
   // 골대 안 통과 체크
   const ballPos = ballBody.position;
@@ -273,7 +310,7 @@ function animate() {
   if (isThrown && withinHoopRadius && passedThroughHoop) {
     const currentPlayer = selectedBalls[currentPlayerIndex].name;
     updateScore(currentPlayer); // 점수 업데이트
-
+    
     resetBall();
   }
 
