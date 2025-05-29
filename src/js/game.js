@@ -5,33 +5,25 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
 let scene, camera, renderer, controls;
-let basketball;
 let ballResetPending = false;
 let throwStartTime = null; 
 let isThrown = false;
 let world;
+let ball = null;
 let ballBody = null; // 공의 물리 바디
+let ballName = null;
 let currentPlayerIndex = 0;
 
-const ballModelMap = {
-  '농구공': 'basketball',
-  '볼링공': 'bowlingball',
-  '종이공': 'paperball',
-  '포켓몬볼': 'pokeball',
-  '돌맹이': 'rock',
-  '눈덩이': 'snowball',
-  '방울토마토': 'tomato',
+const ballDataMap = {
+  '농구공': { model: 'basketball', size: 0.01, mass: 0.2, restitution: 0.8, scale: 0.008 },
+  '볼링공': { model: 'bowlingball', size: 0.4, mass: 10000, restitution: 0.1, scale: 0.4 },
+  '포켓몬볼': { model: 'pokeball', size: 0.01, mass: 0.1, restitution: 0.4, scale: 0.02 },
+  '눈덩이': { model: 'snowball', size: 0.1, mass: 0.3, restitution: 0.1, scale: 0.1 },
+  '방울토마토': { model: 'tomato', size: 0.1, mass: 0.01, restitution: 0.0, scale: 10 },
+  // '돌맹이': { model: 'rock', size: 2, mass: 10, restitution: 0.1, scale: 2 },
+  // '종이공': { model: 'paperball', size: 3, mass: 30, restitution: 0.3, scale: 3 },
 };
 
-const ballSizeMap = {
-  '농구공': 0.01,
-  '볼링공': 0.4,
-  '종이공': 3,
-  '포켓몬볼': 0.01,
-  '돌맹이': 2,
-  '눈덩이': 0.1,
-  '방울토마토': 10,
-};
 
 const hoopPieces = [];
 const segments = 32;
@@ -50,7 +42,7 @@ let selectedBalls = [];
 let remainingThrows = [];
 let throwCount = 3;
 
-
+let ballMaterial;
 
 init();
 animate();
@@ -88,10 +80,19 @@ function init() {
   floor.position.y = -0.5;
   scene.add(floor);
 
+  // 재질 및 ContactMaterial 등록 (여기)
+  ballMaterial = new CANNON.Material('ball_' + ballName);
+  const ballFloorContactMaterial = new CANNON.ContactMaterial(
+    ballMaterial, floorMaterial,
+    { friction: 0.3, restitution: 0.8 }
+  );
+  world.addContactMaterial(ballFloorContactMaterial)
+
   const floorShape = new CANNON.Box(new CANNON.Vec3(50, 0.5, 50));
   const floorBody = new CANNON.Body({
     mass: 0,
     position: new CANNON.Vec3(0, -0.5, 0),
+    material: floorMaterial // 바닥 재질 설정
   });
   floorBody.addShape(floorShape);
   world.addBody(floorBody);
@@ -131,11 +132,11 @@ function init() {
   loadPlayerBallModel(currentPlayerIndex);
 
   // 점수 초기화
-selectedBalls.forEach(p => {
-  if (p.score === undefined) {
-    p.score = 0; // 기존 데이터에 점수 추가
-  }
-});
+  selectedBalls.forEach(p => {
+    if (p.score === undefined) {
+      p.score = 0; // 기존 데이터에 점수 추가
+    }
+  });
 
   // 각 플레이어별 남은 공 수 초기화
   remainingThrows = Array(selectedBalls.length).fill(throwCount);
@@ -150,8 +151,10 @@ selectedBalls.forEach(p => {
 
   document.addEventListener('keyup', (event) => {
     if (event.code === 'Space' && isCharging && !isThrown) {
+      world.addBody(ballBody);
+
       const vx = 0;
-      const vy = throwPower * 0.7;
+      const vy = throwPower * 0.4;
       const vz = -throwPower;
 
       ballBody.velocity.set(vx, vy, vz);
@@ -173,45 +176,44 @@ selectedBalls.forEach(p => {
 }
 
 function loadPlayerBallModel(playerIndex) {
-  if (basketball) scene.remove(basketball);
+  if (ball) scene.remove(ball);
   if (ballBody) world.removeBody(ballBody);
 
-  const ballName = selectedBalls[playerIndex].ball;
-  const modelFolder = ballModelMap[ballName];
-  const ballSize = ballSizeMap[ballName] || 0.3;  // 기본 크기 설정
+  ballName = selectedBalls[playerIndex].ball;
+  const ballData = ballDataMap[ballName];
+  console.log();
 
-  if (!modelFolder) {
+  // const modelFolder = ballModelMap[ballName];
+  // const ballSize = ballSizeMap[ballName] || 0.3;  // 기본 크기 설정
+
+  if (!ballData) {
     console.warn(`알 수 없는 공 이름: ${ballName}`);
     return;
   }
 
   const gltfLoader = new GLTFLoader();
-  gltfLoader.setPath(`src/models/${modelFolder}/`); // 폴더 경로 (gltf, bin, 텍스처들이 있는 곳)
+  gltfLoader.setPath(`src/models/${ballData.model}/`); // 폴더 경로 (gltf, bin, 텍스처들이 있는 곳)
   gltfLoader.load('scene.gltf', (gltf) => {
-    basketball = gltf.scene;
-
-    gltf.scene.position.set(0, 0, 0);
-    gltf.scene.rotation.set(0, 0, 0);
-
-    basketball.scale.set(ballSize, ballSize, ballSize); // 필요 시 크기 조정
-    basketball.position.set(0, 3, 5); // 필요 시 위치 조정
-    scene.add(basketball);
+    ball = gltf.scene;
+    ball.position.set(0, 2, 7);
+    ball.scale.set(ballData.scale, ballData.scale, ballData.scale); // 필요 시 크기 조정
+    scene.add(ball);
     console.log('GLTF 모델 로드 완료');
 
-    // if (!ballBody) {  
-      const ballShape = new CANNON.Sphere(ballSize);
+    // gltf.scene.position.set(0, 0, 0);
+    // gltf.scene.rotation.set(0, 0, 0);
+
+      const ballShape = new CANNON.Sphere(ballData.size);
       ballBody = new CANNON.Body({
-        mass: 0.2,
-        position: new CANNON.Vec3(0, 3, 5),
+        mass: ballData.mass,
+        position: new CANNON.Vec3(0, 2, 7),
+        material: ballMaterial 
       });
       ballBody.addShape(ballShape);
-      world.addBody(ballBody);
-    // }
   }, undefined, (error) => {
     console.error('GLTF 모델 로드 실패:', error);
   });
 }
-
 
 
 function updateScore(playerName) {
@@ -247,7 +249,7 @@ function resetBall() {
     return;
   }
 
-  ballBody.position.set(0, 3, 5);
+  ballBody.position.set(0, 2, 7);
   ballBody.velocity.set(0, 0, 0);
   ballBody.angularVelocity.set(0, 0, 0);
 
@@ -287,15 +289,16 @@ function onWindowResize() {
 
 function animate() {
   requestAnimationFrame(animate);
+
   world.step(1 / 60);
 
   if (isCharging && throwPower < powerMax) {
     throwPower += powerScaling;
   }
 
-  if (basketball && ballBody) {
-    basketball.position.copy(ballBody.position);
-    // basketball.quaternion.copy(ballBody.quaternion);
+  if (ball !== null && ballBody !== null) {
+    ball.position.copy(ballBody.position);
+    // ball.quaternion.copy(ballBody.quaternion);
   }
 
   // 골대 안 통과 체크
@@ -310,9 +313,15 @@ function animate() {
   if (isThrown && withinHoopRadius && passedThroughHoop) {
     const currentPlayer = selectedBalls[currentPlayerIndex].name;
     updateScore(currentPlayer); // 점수 업데이트
+
+    isThrown = false; // 중복 체크 방지
+    ballResetPending = false;
+
     
+    setTimeout(() => {
     resetBall();
-  }
+  }, 500); // .5초 대기 후 공 리셋
+}
 
   if (isThrown && ballResetPending && Date.now() - throwStartTime > 3000) {
     resetBall();
