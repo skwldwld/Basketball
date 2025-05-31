@@ -14,6 +14,11 @@ let ballBody = null; // 공의 물리 바디
 let ballName = null;
 let currentPlayerIndex = 0;
 
+let spotlight = null;
+let spotlightTarget = null;
+let lightCone = null;
+
+
 const ballDataMap = {
   '농구공': { model: 'basketball', size: 0.01, mass: 0.2, restitution: 0.8, scale: 0.008 },
   '볼링공': { model: 'bowlingball', size: 0.4, mass: 10000, restitution: 0.1, scale: 0.4 },
@@ -68,6 +73,7 @@ function init() {
   const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
   directionalLight.position.set(5, 10, 7.5);
   scene.add(directionalLight);
+  
 
   // 물리 엔진 설정
   world = new CANNON.World();
@@ -257,12 +263,23 @@ function resetBall() {
   throwStartTime = null;
   ballResetPending = false;  
 
-
   // 공 개수 감소
   remainingThrows[currentPlayerIndex]--;
 
   // UI 업데이트
   updateRemainingThrowsUI();
+
+  if (spotlight) {
+    scene.remove(spotlight);
+    if (spotlightTarget) scene.remove(spotlightTarget);
+    spotlight = null;
+    spotlightTarget = null;
+  }
+
+  if (lightCone) {
+  scene.remove(lightCone);
+  lightCone = null;
+}
 
   // 다음 플레이어로 전환
   currentPlayerIndex = (currentPlayerIndex + 1) % selectedBalls.length;
@@ -317,10 +334,55 @@ function animate() {
     isThrown = false; // 중복 체크 방지
     ballResetPending = false;
 
+    // ✅ 이전 스포트라이트 제거
+    if (spotlight) {
+      scene.remove(spotlight);
+      scene.remove(spotlightTarget);
+      spotlight = null;
+      spotlightTarget = null;
+    }
+
+    // ✅ 새로운 스포트라이트 생성
+    spotlight = new THREE.SpotLight(0xffffff, 10, 10, Math.PI / 10, 0.3, 1.0);
+    spotlight.position.set(ball.position.x, ball.position.y + 10, ball.position.z);
     
+    spotlightTarget = new THREE.Object3D();
+    spotlightTarget.position.copy(ball.position);
+    scene.add(spotlightTarget);
+    
+    spotlight.target = spotlightTarget;
+    scene.add(spotlight);
+
+    const coneHeight = spotlight.distance;
+    const coneRadius = Math.tan(spotlight.angle) * coneHeight;
+
+    // 기존 spotlight 설정은 그대로 유지하고, 아래 코드 추가
+    const coneGeometry = new THREE.ConeGeometry(coneRadius, coneHeight, 32, 1, true);
+    const coneMaterial = new THREE.MeshBasicMaterial({
+      color: 0xffffff,
+      transparent: true,
+      opacity: 0.3,
+      side: THREE.DoubleSide, // 내부도 보이도록
+    });
+
+    lightCone = new THREE.Mesh(coneGeometry, coneMaterial);
+
+    // 원뿔 위치와 방향 조정
+    lightCone.position.copy(spotlight.position);
+    lightCone.lookAt(spotlightTarget.position);
+    lightCone.rotateX(Math.PI/2); // 기본이 위쪽이므로 뒤집기
+    lightCone.rotateZ(Math.PI); // 전체를 뒤집어서 넓은 부분이 타겟을 향하게
+
+    // 스포트라이트가 향하는 방향
+    const direction = new THREE.Vector3().subVectors(spotlightTarget.position, spotlight.position).normalize();
+    // 원뿔의 가장 좁은 부분이 스포트라이트의 시작점에 오도록 원뿔 위치를 조정
+    lightCone.position.add(direction.multiplyScalar(coneHeight / 2));
+
+    scene.add(lightCone);
+
     setTimeout(() => {
     resetBall();
-  }, 500); // .5초 대기 후 공 리셋
+  }, 1000); // .5초 대기 후 공 리셋
 }
 
   if (isThrown && ballResetPending && Date.now() - throwStartTime > 3000) {
