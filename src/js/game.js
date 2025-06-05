@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
+import { OBJLoader } from 'three/addons/loaders/OBJLoader.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
 let scene, camera, renderer, controls;
@@ -18,25 +19,26 @@ let spotlight = null;
 let spotlightTarget = null;
 let lightCone = null;
 
-
 const ballDataMap = {
-  '농구공': { model: 'basketball', size: 0.01, mass: 0.2, restitution: 0.8, scale: 0.008 },
-  '볼링공': { model: 'bowlingball', size: 0.4, mass: 10000, restitution: 0.1, scale: 0.4 },
+  '농구공': { model: 'basketball', size: 0.01, mass: 0.2, restitution: 0.8, scale: 0.005 },
+  '볼링공': { model: 'bowlingball', size: 0.4, mass: 10000, restitution: 0.1, scale: 0.3 },
   '포켓몬볼': { model: 'pokeball', size: 0.01, mass: 0.1, restitution: 0.4, scale: 0.02 },
   '눈덩이': { model: 'snowball', size: 0.1, mass: 0.3, restitution: 0.1, scale: 0.1 },
-  '방울토마토': { model: 'tomato', size: 0.1, mass: 0.01, restitution: 0.0, scale: 10 },
+  '방울토마토': { model: 'tomato', size: 0.1, mass: 0.001, restitution: 0.0, scale: 10 },
   // '돌맹이': { model: 'rock', size: 2, mass: 10, restitution: 0.1, scale: 2 },
   // '종이공': { model: 'paperball', size: 3, mass: 30, restitution: 0.3, scale: 3 },
 };
 
-
 const hoopPieces = [];
 const segments = 32;
-const ringRadius = 1.0;
-const ringHeight = 0.1;
+const ringRadius = 0.85;
+const ringHeight = 0.01;
 const pieceSize = 0.2;
-const hoopY = 1;
-const hoopZ = -3;
+
+const hoopY = 12.9;
+const hoopZ = -3.3;
+const hoopmodelY = 8;
+const hoopmodelZ = -5;
 
 let throwPower = 0;
 let powerScaling = 0.4;
@@ -59,7 +61,7 @@ function init() {
   scene = new THREE.Scene();
 
   camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-  camera.position.set(0, 5, 12);
+  camera.position.set(0, 8, 18);
 
   renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setSize(window.innerWidth, window.innerHeight);
@@ -103,9 +105,26 @@ function init() {
   floorBody.addShape(floorShape);
   world.addBody(floorBody);
 
+  // 골대
+  const loader = new OBJLoader();
+  loader.load('src/models/hoop/basketball_hoop.obj', (object) => {
+    const textureLoader = new THREE.TextureLoader();
+    const texture = textureLoader.load('src/models/hoop/basketball_hoop_diffuse_noAO.jpg');
+    object.traverse((child) => {
+      if (child.isMesh) {
+        child.material.map = texture;
+        child.material.needsUpdate = true;
+      }
+    });
+
+    object.position.set(0, hoopmodelY, hoopmodelZ);
+    object.scale.set(0.001, 0.001, 0.001); // OBJ 크기에 따라 조정
+    scene.add(object);
+  });
+
   // 도넛 골대 (시각용)
   const torusGeometry = new THREE.TorusGeometry(ringRadius, 0.05, 16, 100);
-  const torusMaterial = new THREE.MeshStandardMaterial({ color: 0xffff00 });
+  const torusMaterial = new THREE.MeshStandardMaterial({ color: 0xff0000 });
   const torus = new THREE.Mesh(torusGeometry, torusMaterial);
   torus.position.set(0, hoopY, hoopZ);
   torus.rotation.x = Math.PI / 2;
@@ -117,7 +136,7 @@ function init() {
     const x = ringRadius * Math.cos(angle);
     const z = ringRadius * Math.sin(angle);
 
-    const shape = new CANNON.Box(new CANNON.Vec3(pieceSize, ringHeight / 2, pieceSize));
+    const shape = new CANNON.Box(new CANNON.Vec3(pieceSize/2, ringHeight, pieceSize/2));
     const body = new CANNON.Body({
       mass: 0,
       position: new CANNON.Vec3(x, hoopY, z + hoopZ),
@@ -127,13 +146,58 @@ function init() {
     world.addBody(body);
     hoopPieces.push(body);
 
-    const box = new THREE.BoxGeometry(pieceSize * 2, ringHeight, pieceSize * 2);
-    const mat = new THREE.MeshStandardMaterial({ color: 0xffff00 });
+    const box = new THREE.BoxGeometry(pieceSize/2, ringHeight, pieceSize/2 );
+    const mat = new THREE.MeshStandardMaterial({ color: 0xff0000 });
     const mesh = new THREE.Mesh(box, mat);
     mesh.position.set(x, hoopY, z + hoopZ);
     mesh.rotation.y = -angle;
     scene.add(mesh);
   }
+
+  // init 함수 내, OBJLoader 코드 이후, 도넛 골대 충돌체 루프 이전에 추가
+
+  // 백보드 물리 바디
+  const backboardWidth = 6.3; // 실제 모델 크기에 맞춰 조절
+  const backboardHeight = 3.5;
+  const backboardDepth = 0.5;
+  const backboardShape = new CANNON.Box(new CANNON.Vec3(backboardWidth / 2, backboardHeight / 2, backboardDepth / 2));
+  const backboardBody = new CANNON.Body({
+    mass: 0, // 움직이지 않는 물체
+    position: new CANNON.Vec3(0, hoopY + 1, hoopZ - 1), // 골대 링 뒤쪽, 높이 조정 필요
+    restitution: 0.8
+  });
+  backboardBody.addShape(backboardShape);
+  world.addBody(backboardBody);
+
+  // 디버깅용 시각화 (선택 사항)
+  const backboardMesh = new THREE.Mesh(
+    new THREE.BoxGeometry(backboardWidth, backboardHeight, backboardDepth),
+    new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.5 })
+  );
+  backboardMesh.position.copy(backboardBody.position);
+  scene.add(backboardMesh);
+
+  // 폴대 물리 바디
+  const poleWidth = 0.5; // 실제 모델 크기에 맞춰 조절
+  const poleHeight = 10;
+  const poleDepth = 0.5;
+  const poleShape = new CANNON.Box(new CANNON.Vec3(poleWidth / 2, poleHeight / 2, poleDepth / 2));
+  const poleBody = new CANNON.Body({
+    mass: 0, // 움직이지 않는 물체
+    position: new CANNON.Vec3(0, hoopmodelY, hoopmodelZ - 2), // 골대 링 뒤쪽, 높이 조정 필요
+    restitution: 0.8
+  });
+  poleBody.addShape(poleShape);
+  world.addBody(poleBody);
+
+  // 디버깅용 시각화 (선택 사항)
+  const poleMesh = new THREE.Mesh(
+    new THREE.BoxGeometry(poleWidth, poleHeight, poleDepth),
+    new THREE.MeshBasicMaterial({ color: 0xc2c2c2, transparent: true, opacity: 0.5 })
+  );
+  poleMesh.position.copy(poleBody.position);
+  scene.add(poleMesh);
+
 
   loadPlayerBallModel(currentPlayerIndex);
 
@@ -160,7 +224,7 @@ function init() {
       world.addBody(ballBody);
 
       const vx = 0;
-      const vy = throwPower * 0.4;
+      const vy = throwPower * 1.3;
       const vz = -throwPower;
 
       ballBody.velocity.set(vx, vy, vz);
@@ -201,21 +265,20 @@ function loadPlayerBallModel(playerIndex) {
   gltfLoader.setPath(`src/models/${ballData.model}/`); // 폴더 경로 (gltf, bin, 텍스처들이 있는 곳)
   gltfLoader.load('scene.gltf', (gltf) => {
     ball = gltf.scene;
-    ball.position.set(0, 2, 7);
+    // 공 위치 1/2
+    ball.position.set(0, 3, 10);
     ball.scale.set(ballData.scale, ballData.scale, ballData.scale); // 필요 시 크기 조정
     scene.add(ball);
     console.log('GLTF 모델 로드 완료');
 
-    // gltf.scene.position.set(0, 0, 0);
-    // gltf.scene.rotation.set(0, 0, 0);
-
-      const ballShape = new CANNON.Sphere(ballData.size);
-      ballBody = new CANNON.Body({
-        mass: ballData.mass,
-        position: new CANNON.Vec3(0, 2, 7),
-        material: ballMaterial 
-      });
-      ballBody.addShape(ballShape);
+    const ballShape = new CANNON.Sphere(ballData.size);
+    ballBody = new CANNON.Body({
+      mass: ballData.mass,
+      // 공 위치 2/2
+      position: new CANNON.Vec3(0, 3, 10),
+      material: ballMaterial 
+    });
+    ballBody.addShape(ballShape);
   }, undefined, (error) => {
     console.error('GLTF 모델 로드 실패:', error);
   });
@@ -255,7 +318,7 @@ function resetBall() {
     return;
   }
 
-  ballBody.position.set(0, 2, 7);
+  ballBody.position.set(0, 3, 10);
   ballBody.velocity.set(0, 0, 0);
   ballBody.angularVelocity.set(0, 0, 0);
 
@@ -268,18 +331,6 @@ function resetBall() {
 
   // UI 업데이트
   updateRemainingThrowsUI();
-
-  if (spotlight) {
-    scene.remove(spotlight);
-    if (spotlightTarget) scene.remove(spotlightTarget);
-    spotlight = null;
-    spotlightTarget = null;
-  }
-
-  if (lightCone) {
-  scene.remove(lightCone);
-  lightCone = null;
-}
 
   // 다음 플레이어로 전환
   currentPlayerIndex = (currentPlayerIndex + 1) % selectedBalls.length;
@@ -333,53 +384,7 @@ function animate() {
 
     isThrown = false; // 중복 체크 방지
     ballResetPending = false;
-
-    // ✅ 이전 스포트라이트 제거
-    if (spotlight) {
-      scene.remove(spotlight);
-      scene.remove(spotlightTarget);
-      spotlight = null;
-      spotlightTarget = null;
-    }
-
-    // ✅ 새로운 스포트라이트 생성
-    spotlight = new THREE.SpotLight(0xffffff, 10, 10, Math.PI / 10, 0.3, 1.0);
-    spotlight.position.set(ball.position.x, ball.position.y + 10, ball.position.z);
-    
-    spotlightTarget = new THREE.Object3D();
-    spotlightTarget.position.copy(ball.position);
-    scene.add(spotlightTarget);
-    
-    spotlight.target = spotlightTarget;
-    scene.add(spotlight);
-
-    const coneHeight = spotlight.distance;
-    const coneRadius = Math.tan(spotlight.angle) * coneHeight;
-
-    // 기존 spotlight 설정은 그대로 유지하고, 아래 코드 추가
-    const coneGeometry = new THREE.ConeGeometry(coneRadius, coneHeight, 32, 1, true);
-    const coneMaterial = new THREE.MeshBasicMaterial({
-      color: 0xffffff,
-      transparent: true,
-      opacity: 0.3,
-      side: THREE.DoubleSide, // 내부도 보이도록
-    });
-
-    lightCone = new THREE.Mesh(coneGeometry, coneMaterial);
-
-    // 원뿔 위치와 방향 조정
-    lightCone.position.copy(spotlight.position);
-    lightCone.lookAt(spotlightTarget.position);
-    lightCone.rotateX(Math.PI/2); // 기본이 위쪽이므로 뒤집기
-    lightCone.rotateZ(Math.PI); // 전체를 뒤집어서 넓은 부분이 타겟을 향하게
-
-    // 스포트라이트가 향하는 방향
-    const direction = new THREE.Vector3().subVectors(spotlightTarget.position, spotlight.position).normalize();
-    // 원뿔의 가장 좁은 부분이 스포트라이트의 시작점에 오도록 원뿔 위치를 조정
-    lightCone.position.add(direction.multiplyScalar(coneHeight / 2));
-
-    scene.add(lightCone);
-
+   
     setTimeout(() => {
     resetBall();
   }, 1000); // .5초 대기 후 공 리셋
