@@ -15,9 +15,7 @@ let ballBody = null; // 공의 물리 바디
 let ballName = null;
 let currentPlayerIndex = 0;
 
-let spotlight = null;
-let spotlightTarget = null;
-let lightCone = null;
+let sideCamera; // 옆에서 보는 카메라
 
 const ballDataMap = {
   '농구공': { model: 'basketball', size: 0.01, mass: 0.2, restitution: 0.8, scale: 0.005 },
@@ -62,6 +60,12 @@ function init() {
 
   camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
   camera.position.set(0, 8, 18);
+  camera.lookAt(0, hoopmodelY + 10, hoopmodelZ + 10);
+
+  // --- 추가: 보조 카메라 (Side Camera) 설정 ---
+  const aspect = 1; // 네모난 화면이므로 가로/세로 비율은 1
+  sideCamera = new THREE.PerspectiveCamera(30, aspect, 0.1, 1000);
+  scene.add(sideCamera); // 씬에 추가해줘야 합니다.
 
   renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setSize(window.innerWidth, window.innerHeight);
@@ -69,6 +73,8 @@ function init() {
 
   controls = new OrbitControls(camera, renderer.domElement);
   controls.enableRotate = false;
+  controls.target.set(0, hoopY, hoopZ - 10); // 예시: 농구 골대 림의 중심을 바라보도록 설정
+  controls.update(); // target을 변경한 후에는 항상 update()를 호출해야 합니다.
 
   const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
   scene.add(ambientLight);
@@ -153,8 +159,6 @@ function init() {
     mesh.rotation.y = -angle;
     scene.add(mesh);
   }
-
-  // init 함수 내, OBJLoader 코드 이후, 도넛 골대 충돌체 루프 이전에 추가
 
   // 백보드 물리 바디
   const backboardWidth = 6.3; // 실제 모델 크기에 맞춰 조절
@@ -266,7 +270,7 @@ function loadPlayerBallModel(playerIndex) {
   gltfLoader.load('scene.gltf', (gltf) => {
     ball = gltf.scene;
     // 공 위치 1/2
-    ball.position.set(0, 3, 10);
+    ball.position.set(0, 5, 10);
     ball.scale.set(ballData.scale, ballData.scale, ballData.scale); // 필요 시 크기 조정
     scene.add(ball);
     console.log('GLTF 모델 로드 완료');
@@ -275,7 +279,7 @@ function loadPlayerBallModel(playerIndex) {
     ballBody = new CANNON.Body({
       mass: ballData.mass,
       // 공 위치 2/2
-      position: new CANNON.Vec3(0, 3, 10),
+      position: new CANNON.Vec3(0, 5, 10),
       material: ballMaterial 
     });
     ballBody.addShape(ballShape);
@@ -348,10 +352,25 @@ function resetBall() {
 
 }
 
+// function onWindowResize() {
+//   camera.aspect = window.innerWidth / window.innerHeight;
+//   camera.updateProjectionMatrix();
+//   renderer.setSize(window.innerWidth, window.innerHeight);
+// }
+
 function onWindowResize() {
-  camera.aspect = window.innerWidth / window.innerHeight;
+  const w = window.innerWidth;
+  const h = window.innerHeight;
+
+  // 메인 카메라 업데이트
+  camera.aspect = w / h;
   camera.updateProjectionMatrix();
-  renderer.setSize(window.innerWidth, window.innerHeight);
+  
+  // 사이드 카메라 업데이트 (가로/세로 비율 1:1 유지)
+  sideCamera.aspect = 1; // (w / 4) / (h / 4) = w / h 와 동일, 하지만 정사각형을 원하면 1로 고정
+  sideCamera.updateProjectionMatrix();
+
+  renderer.setSize(w, h);
 }
 
 
@@ -394,8 +413,54 @@ function animate() {
     resetBall();
   }
 
-  window.remainingThrows = remainingThrows;
 
-  controls.update();
+  // --- 렌더링 로직 수정 ---
+
+  const w = window.innerWidth;
+  const h = window.innerHeight;
+
+  // 1. 전체 화면 (메인 카메라) 렌더링
+  renderer.setViewport(0, 0, w, h);
+  renderer.setScissor(0, 0, w, h);
+  renderer.setScissorTest(true); // Scissor Test 활성화
   renderer.render(scene, camera);
+
+  // 2. 오른쪽 위 보조 화면 (사이드 카메라) 렌더링
+  if (ball && ballBody) { // 공이 존재할 때만 보조 화면 렌더링
+    const pipWidth = w / 4;  // 화면 너비의 1/4 크기
+    const pipHeight = h / 4; // 화면 높이의 1/4 크기
+    const pipX = w - pipWidth - 20; // 오른쪽에서 20px 띄움
+    const pipY = h - pipHeight - 20; // 위에서 20px 띄움
+
+    renderer.setViewport(pipX, pipY, pipWidth, pipHeight);
+    renderer.setScissor(pipX, pipY, pipWidth, pipHeight);
+    renderer.setScissorTest(true);
+
+    // 사이드 카메라가 공을 따라가도록 위치와 시점 업데이트
+    const sideOffset = 15; // 옆에서 얼마나 떨어져서 볼지
+    const heightOffset = 5;  // 위에서 얼마나 높게 볼지
+    sideCamera.position.set(
+      ball.position.x + sideOffset,
+      ball.position.y + heightOffset,
+      ball.position.z
+    );
+    sideCamera.lookAt(ball.position); // 항상 공을 바라보도록 설정
+
+    // 보조 화면 배경을 약간 어둡게 처리 (선택사항)
+    renderer.setClearColor(0x000000, 0.5); 
+    renderer.clear(false, true, false); // Depth 버퍼만 클리어
+    
+    renderer.render(scene, sideCamera);
+
+    // 다음 렌더링을 위해 기본값으로 복원
+    renderer.setClearColor(0x000000, 0); 
+  }
+
+  // Scissor Test 비활성화
+  renderer.setScissorTest(false);
+
+  // window.remainingThrows = remainingThrows;
+
+  // controls.update();
+  // renderer.render(scene, camera);
 }
