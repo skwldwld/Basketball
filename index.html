@@ -8,6 +8,7 @@
 <style>
     body {
         font-family: 'Orbitron', monospace;
+        
         background: black;
         color: white;
         height: 100vh;
@@ -17,25 +18,35 @@
         align-items: center;
         justify-content: center;
         overflow: hidden;
+
+        /* cursor: none; */
     }
+
     h1 {
-        font-size: 4rem;
+        color: #1a1a1a;
+        font-size: 3rem;
         margin-bottom: 2rem;
-        text-shadow: 0 0 15px #ff6b6b;
+        /* text-shadow: 0 0 15px #f6b162; */
     }
+
     .input-container {
+        width: 550px;
+        height: 400px;
         display: flex;
         flex-direction: column;
         align-items: center;
-        background-color: #1a1a1a;
+        background-color: #ffffff69;
         padding: 2rem;
         border-radius: 20px;
-        box-shadow: 0 0 10px rgba(255, 107, 107, 0.3);
+        color: black
+        /* box-shadow: 0 0 10px rgba(255, 107, 107, 0.3); */
     }
+
     label {
         font-size: 1.3rem;
         margin-bottom: 0.5rem;
     }
+
     input[type="number"] {
         font-size: 1.5rem;
         width: 120px;
@@ -45,19 +56,22 @@
         padding: 0.4rem;
         margin-bottom: 1rem;
     }
+
     button {
         cursor: pointer;
-        background: #ff6b6b;
+        background: transparent;
         border: none;
-        color: white;
         padding: 0.6rem 2rem;
+        color: #000000;
+        border: 1px solid #000000;
         border-radius: 30px;
         font-size: 1.2rem;
         margin-top: 1.2rem;
         transition: background 0.3s;
     }
     button:hover {
-        background: #ff4a4a;
+        background: black;
+        color: white;
     }
     #players-list {
         margin-top: 2rem;
@@ -65,52 +79,102 @@
         width: 320px;
         max-height: 200px;
         overflow-y: auto;
-        border: 1px solid #ff6b6b;
+        border: 1px solid #f6b162;
         padding: 1rem;
         border-radius: 12px;
         font-size: 1.2rem;
         background-color: #1a1a1a;
         display: none;
     }
+
+    #result-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.8);
+    justify-content: center;
+    align-items: center;
+    z-index: 999;
+}
+
+.modal-content {
+    background: #1a1a1a;
+    padding: 2rem;
+    border-radius: 20px;
+    text-align: center;
+    width: 80%;
+    max-width: 400px;
+}
+
+#modal-results {
+    color: white;
+    margin-bottom: 1.5rem;
+}
+
+#go-to-game {
+    background: #1a1a1a;
+    border: 1px solid white;
+    padding: 0.5rem 2rem;
+    font-size: 1rem;
+    border-radius: 30px;
+    color: white;
+    cursor: pointer;
+}
+
+#go-to-game:hover {
+    background: white;
+    color: black;
+}
+
+#background-canvas {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: -1; /* 뒤에 깔리도록 */
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+}
+canvas {
+    display: block;
+}
+
+
 </style>
 </head>
 <body>
-    <audio>
-        <source src="src/bgm/지떨브.mp3" type="audio/mpeg">
-        Your browser does not support the audio element.
-    </audio>
-    <h1>What the Ball..!</h1>
-
-    <div class="input-container">
-        <label for="player-count">플레이어 수 (2~8):</label>
+      <div id="background-canvas"></div>
+      <div class="input-container">
+          <h1>What the Ball!!</h1>
+          <label for="player-count">플레이어 수 (2~8)</label>
         <input type="number" id="player-count" min="2" max="8" value="2" />
-        <label for="throw-count">공 던지는 횟수 (1~5):</label>
+        <label for="throw-count">공 개수 (1~5)</label>
         <input type="number" id="throw-count" min="1" max="5" value="3" />
-
         <button id="assign-btn">🎲 랜덤으로 공 정하기</button>
     </div>
 
     <div id="players-list"></div>
 
-    <div id="result-modal" style="display:none; position: fixed; top: 0; left: 0; 
-    width: 100%; height: 100%; background-color: rgba(0,0,0,0.8); 
-     justify-content: center; align-items: center; z-index: 999;">
-        <div style="background: #1a1a1a; padding: 2rem; border-radius: 20px; text-align: center; width: 80%; max-width: 400px;">
-            <h2 style="color: #ff6b6b; margin-bottom: 1rem;">🎉 공이 정해졌어요!</h2>
-            <div id="modal-results" style="color: white; margin-bottom: 1.5rem;"></div>
-            <button id="go-to-game" style="background: #ff6b6b; border: none; padding: 0.7rem 2rem; font-size: 1.2rem; border-radius: 30px; color: white; cursor: pointer;">게임하러가기</button>
-        </div>
+    <div id="result-modal">
+    <div class="modal-content">
+        <h3 id="modal-results"></h3>
+        <button id="go-to-game">게임하러가기</button>
     </div>
+</div>
 
+<script type="module" src="./src/js/background.js"></script>
 <script>
     const balls = [
         '농구공',
         '포켓몬볼',
         '눈덩이',
         '볼링공',
+        '방울토마토'
         // '종이공',
         // '돌맹이',
-        '방울토마토'
     ];
 
     const playerCountInput = document.getElementById('player-count');
@@ -128,18 +192,11 @@
             return;
         }
 
-        playersList.innerHTML = '';
-        playersList.style.display = 'block';
-
         const assignments = [];
         for (let i = 0; i < playerCount; i++) {
             const randomIndex = Math.floor(Math.random() * balls.length);
             assignments.push({ name: `플레이어 ${i + 1}`, ball: balls[randomIndex] });
         }
-
-        assignments.forEach(p => {
-            playersList.innerHTML += `${p.name}: ${p.ball}<br/>`;
-        });
 
         modalResults.innerHTML = assignments.map(p => `${p.name}: ${p.ball}`).join('<br>');
 
@@ -149,6 +206,19 @@
 
         // 모달 표시
         resultModal.style.display = 'flex';
+    });
+
+    // 모달 바깥 클릭 시 초기화
+    resultModal.addEventListener('click', (event) => {
+        // 오직 바깥 영역 클릭 시만 처리
+        if (!event.target.closest('.modal-content')) {
+            location.reload();
+        }
+    });
+
+    // 모달 내용 클릭 시 이벤트 전파 방지
+    document.querySelector('.modal-content').addEventListener('click', (event) => {
+        event.stopPropagation();
     });
 
     goToGameBtn.addEventListener('click', () => {

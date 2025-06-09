@@ -8,7 +8,7 @@
         body {
             font-family: 'Orbitron', monospace;
             background: #121212;
-            color: white;
+            color: black;
             height: 100vh;
             margin: 0;
             display: flex;
@@ -18,15 +18,16 @@
             overflow: hidden;
         }
         h1 {
-            font-size: 2.5rem;
+            font-size: 2rem;
             margin-bottom: 1.5rem;
-            text-shadow: 0 0 8px rgba(255, 107, 107, 0.6);
+            color: black;
+            font-weight: bold   ;
         }
         .results-container {
-            background-color: #1a1a1a;
+            background-color: #ffffff69;
             padding: 1.5rem;
             border-radius: 15px;
-            box-shadow: 0 0 8px rgba(255, 107, 107, 0.3);
+            /* box-shadow: 0 0 8px rgba(255, 107, 107, 0.3); */
             width: 80%;
             max-width: 400px;
             text-align: center;
@@ -35,35 +36,52 @@
             font-size: 1.2rem;
             padding: 0.5rem;
             margin: 0.3rem 0;
-            background-color: #232323;
-            border-radius: 8px;
         }
         .first-place {
             font-size: 1.5rem;
-            color: #ff6b6b;
+            color: black;
             font-weight: bold;
-            text-shadow: 0 0 6px #ff6b6b;
         }
         .button {
             cursor: pointer;
-            background: #ff6b6b;
-            border: none;
-            color: white;
-            padding: 0.5rem 1.5rem;
-            border-radius: 25px;
-            font-size: 1rem;
-            margin-top: 1rem;
+            background: transparent;
+            border: 1px solid black;
+            color: black;
+            padding: 0.5rem 5rem;
+            border-radius: 20px;
+            font-size: 18px;
+            font-weight: bold;
+            margin-top: 60px;
             transition: background 0.3s;
         }
         .button:hover {
-            background: #ff4a4a;
+            background: black;
+            color: white;
+        }
+
+        #background-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: -1; /* 뒤에 깔리도록 */
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+        canvas {
+            display: block;
         }
     </style>
 </head>
 <body>
-    <h1>🎯 게임 결과 🎯</h1>
-    <div class="results-container" id="results"></div>
-    <button class="button" onclick="window.location.href = 'index.html'">다시 시작하기</button>
+    <div id="background-canvas"></div>
+    <div class="results-container">
+        <h1>게임 결과</h1>
+        <div id="results"></div>
+        <button class="button" onclick="window.location.href = 'index.html'">다시하기</button>
+    </div>
+
+    <script type="module" src="./src/js/background.js"></script>
 
     <script>
         // 로컬스토리지에서 게임 결과 가져오기
@@ -77,12 +95,29 @@
 
             // 결과 표시
             const resultsDiv = document.getElementById("results");
+
+            let currentRank = 1;    // 현재 등수
+            let previousScore = null; // 이전 점수
+            let skipRank = 0;       // 중복된 점수 개수 (등수 건너뛰기용)
+
             players.forEach((player, index) => {
-                const playerDiv = document.createElement("div");
-                playerDiv.classList.add("player");
-                if (index === 0) playerDiv.classList.add("first-place");  // 1등 강조
-                playerDiv.innerHTML = `<strong>${index + 1}위</strong> - ${player.name} - ${player.ball} - ${player.score}점`;
-                resultsDiv.appendChild(playerDiv);
+            // 이전 점수와 다르면 현재 등수를 index에 skipRank 보정해 더함
+            if (player.score !== previousScore) {
+                currentRank = index + 1;
+                currentRank += skipRank;
+                skipRank = 0;
+            } else {
+                // 점수가 같으면 skipRank 증가
+                skipRank++;
+            }
+
+            const playerDiv = document.createElement("div");
+            playerDiv.classList.add("player");
+            if (currentRank === 1) playerDiv.classList.add("first-place");  // 1등 강조
+            playerDiv.innerHTML = `<strong>${currentRank}위</strong>  ${player.name}  ${player.ball}  ${player.score}점`;
+            resultsDiv.appendChild(playerDiv);
+
+            previousScore = player.score;
             });
         }
     </script>

@@ -12,11 +12,12 @@
       top: 20px;
       left: 20px;
       z-index: 10;
-      background-color: rgba(255, 255, 255);
       padding: 15px;
       border-radius: 10px;
       font-size: 16px;
-      width: 250px;
+      width: 280px;
+      color: black;
+      background-color: rgba(255, 255, 255, 0.741)
     }
 
     table {
@@ -32,9 +33,9 @@
     }
 
     th {
-      background-color: rgba(255, 182, 182, 0.5);
+      /* background-color: #f6b1629c; */
+      border-bottom: 1px solid black;
     }
-
 
     #score {
       position: absolute;
@@ -57,6 +58,28 @@
       font-size: 16px;
       line-height: 1.6;
     }
+
+    /* 점수표에서 현재 플레이어를 강조하는 스타일 */
+    .current-player {
+        font-weight: bold;
+        font-size: 18px
+        /* color: #f4aa56; */
+    }
+
+    /* 10초동안 안 누를 때 문구 스타일 */
+    #inactivity-prompt {
+        position: absolute;
+        bottom: 10%;
+        left: 50%;
+        transform: translateX(-50%);
+        color: #cccccc; /* 흰색보다 약간 어두운 회색 */
+        font-size: 24px;
+        font-style: italic;
+        text-shadow: 1px 1px 2px #000000;
+        pointer-events: none;
+        opacity: 0;
+        transition: opacity 0.5s ease-in-out;
+    }
   </style>
 </head>
 <body>
@@ -74,6 +97,7 @@
       <tbody id="player-list"></tbody>
     </table>
   </div>
+  <div id="inactivity-prompt"></div>
 
   <!-- 게임 스크립트는 모듈로 로드 -->
   <script type="module" src="./src/js/game.js"></script>
