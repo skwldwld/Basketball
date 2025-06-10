@@ -10,11 +10,11 @@ let throwStartTime = null;
 let isThrown = false;
 let world;
 let ball = null;
-let ballBody = null; // 공의 물리 바디
+let ballBody = null;
 let ballName = null;
 let currentPlayerIndex = 0;
-let inactivityTimer = null; // <<< 추가: 비활성화 타이머 ID 저장 변수
-let sideCamera; // 옆에서 보는 카메라
+let inactivityTimer = null;
+let sideCamera; 
 
 const ballDataMap = {
   '농구공': { model: 'basketball', size: 0.01, mass: 0.2, restitution: 0.8, scale: 0.008 },
@@ -59,7 +59,6 @@ function init() {
 
   camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
   camera.position.set(0, hoopY + 2, 20);
-  // camera.lookAt(0, 0, hoopmodelZ + 10);
 
   // 보조 카메라 (Side Camera) 설정
   const aspect = 2; // 가로/세로 비율
@@ -227,14 +226,6 @@ function init() {
   backboardBody.addShape(backboardShape);
   world.addBody(backboardBody);
 
-  // 백보드 시각화
-  // const backboardMesh = new THREE.Mesh(
-  //   new THREE.BoxGeometry(backboardWidth, backboardHeight, backboardDepth),
-  //   new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.5 })
-  // );
-  // backboardMesh.position.copy(backboardBody.position);
-  // scene.add(backboardMesh);
-
   // 폴대 물리 바디
   const poleWidth = 0.5; 
   const poleHeight = 13;
@@ -243,18 +234,10 @@ function init() {
   const poleBody = new CANNON.Body({
     mass: 0,
     position: new CANNON.Vec3(0, hoopmodelY - 3, hoopmodelZ - 2), 
-    restitution: 0.3
+    restitution: 0.8
   });
   poleBody.addShape(poleShape);
   world.addBody(poleBody);
-
-  // 폴대 시각화 
-  // const poleMesh = new THREE.Mesh(
-  //   new THREE.BoxGeometry(poleWidth, poleHeight, poleDepth),
-  //   new THREE.MeshBasicMaterial({ color: 0xc2c2c2, transparent: true, opacity: 0.5 })
-  // );
-  // poleMesh.position.copy(poleBody.position);
-  // scene.add(poleMesh);
 
   loadPlayerBallModel(currentPlayerIndex);
 
@@ -366,7 +349,7 @@ function updateScoreUI() {
     const playerName = row.cells[0].textContent.trim();
     const player = selectedBalls.find(p => p.name === playerName);
     if (player) {
-      row.cells[3].textContent = `${player.score}점`; // 점수 UI 업데이트
+      row.cells[3].textContent = `${player.score}점`; 
     }
   });
 }
@@ -393,7 +376,6 @@ function updatePlayerHighlight() {
 
 // 공 던져!!!
 function startInactivityTimer() {
-    // 이전에 설정된 타이머가 있다면 제거
     clearTimeout(inactivityTimer);
 
     const promptElement = document.getElementById('inactivity-prompt');
@@ -535,7 +517,7 @@ function animate() {
   }, 1000); 
 }
 
-  if (isThrown && ballResetPending && Date.now() - throwStartTime > 3000) {
+  if (isThrown && ballResetPending && Date.now() - throwStartTime > 4000) {
     resetBall();
   }
 

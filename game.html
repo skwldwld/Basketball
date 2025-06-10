@@ -4,8 +4,21 @@
   <meta charset="UTF-8">
   <title>WhatTheBall</title>
   <link rel="icon" type="image/png" href="favicon.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&display=swap" rel="stylesheet">
+
   <style>
-    body { margin: 0; overflow: hidden; }
+    .gowun-dodum-regular {
+        font-family: "Gowun Dodum", sans-serif;
+        font-weight: 400;
+        font-style: normal;
+    }
+    body { 
+      font-family: "Gowun Dodum", sans-serif;
+      margin: 0; 
+      overflow: hidden; 
+    }
     canvas { display: block; }
 
     #player-info {
@@ -13,11 +26,11 @@
       top: 20px;
       left: 20px;
       z-index: 10;
-      padding: 15px;
+      padding: 10px;
       border-radius: 10px;
-      font-size: 16px;
+      font-size: 14px;
       width: 280px;
-      color: black;
+      color: rgb(87, 87, 87);
       background-color: rgba(255, 255, 255, 0.741)
     }
 
@@ -35,7 +48,7 @@
 
     th {
       /* background-color: #f6b1629c; */
-      border-bottom: 1px solid black;
+      border-bottom: 1px solid rgb(87, 87, 87);
     }
 
     #score {
@@ -63,8 +76,8 @@
     /* 점수표에서 현재 플레이어를 강조하는 스타일 */
     .current-player {
         font-weight: bold;
-        font-size: 18px
-        /* color: #f4aa56; */
+        font-size: 16px;
+        color: black;
     }
 
     /* 10초동안 안 누를 때 문구 스타일 */
@@ -73,7 +86,7 @@
         bottom: 10%;
         left: 50%;
         transform: translateX(-50%);
-        color: #cccccc; /* 흰색보다 약간 어두운 회색 */
+        color: white;
         font-size: 24px;
         font-style: italic;
         text-shadow: 1px 1px 2px #000000;

@@ -32,13 +32,12 @@ gltfLoader.load('scene.glb', (gltf) => {
 model = gltf.scene;
 model.traverse((child) => {
     if (child.isMesh) {
-    // 기본 머티리얼에 텍스처 적용
     child.material.map = myTexture;
     child.material.needsUpdate = true;
     }
 });
 model.position.set(0, 0, 0);
-model.scale.set(0.1, 0.1, 0.1); // 필요 시 크기 조정
+model.scale.set(0.1, 0.1, 0.1); 
 scene.add(model);
 });
 
@@ -53,7 +52,7 @@ function animate() {
 }
 animate();
 
-// 창 크기 변경 대응
+// 창 크기 변경
 window.addEventListener('resize', () => {
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();

@@ -6,9 +6,18 @@
 <title>WhatTheBall</title>
 <link rel="icon" type="image/png" href="favicon.png" />
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&display=swap" rel="stylesheet">
 <style>
+    .gowun-dodum-regular {
+        font-family: "Gowun Dodum", sans-serif;
+        font-weight: 400;
+        font-style: normal;
+    }
+    
     body {
-        font-family: 'Orbitron', monospace;
+        font-family: "Gowun Dodum", sans-serif;
         
         background: black;
         color: white;
@@ -24,8 +33,9 @@
     }
 
     h1 {
+        font-family: 'Orbitron', monospace;
         color: #1a1a1a;
-        font-size: 3rem;
+        font-size: 2.7rem;
         margin-bottom: 2rem;
         /* text-shadow: 0 0 15px #f6b162; */
     }
@@ -59,6 +69,7 @@
     }
 
     button {
+        font-family: "Gowun Dodum", sans-serif;
         cursor: pointer;
         background: transparent;
         border: none;
@@ -99,62 +110,131 @@
     justify-content: center;
     align-items: center;
     z-index: 999;
-}
+    }
 
-.modal-content {
-    background: #1a1a1a;
-    padding: 2rem;
-    border-radius: 20px;
-    text-align: center;
-    width: 80%;
-    max-width: 400px;
-}
+    .modal-content {
+        background: #1a1a1a;
+        padding: 2rem;
+        border-radius: 20px;
+        text-align: center;
+        width: 80%;
+        max-width: 400px;
+    }
 
-#modal-results {
-    color: white;
-    margin-bottom: 1.5rem;
-}
+    #modal-results {
+        color: white;
+        margin-bottom: 1.5rem;
+    }
 
-#go-to-game {
-    background: #1a1a1a;
-    border: 1px solid white;
-    padding: 0.5rem 2rem;
-    font-size: 1rem;
-    border-radius: 30px;
-    color: white;
-    cursor: pointer;
-}
+    #go-to-game {
+        background: #1a1a1a;
+        border: 1px solid white;
+        padding: 0.5rem 2rem;
+        font-size: 1rem;
+        border-radius: 30px;
+        color: white;
+        cursor: pointer;
+    }
 
-#go-to-game:hover {
-    background: white;
-    color: black;
-}
+    #go-to-game:hover {
+        background: white;
+        color: black;
+    }
 
-#background-canvas {
-    position: fixed;
-    top: 0;
-    left: 0;
-    z-index: -1; /* 뒤에 깔리도록 */
-    width: 100%;
-    height: 100%;
-    overflow: hidden;
-}
-canvas {
-    display: block;
-}
+    #background-canvas {
+        position: fixed;
+        top: 0;
+        left: 0;
+        z-index: -1; /* 뒤에 깔리도록 */
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+    }
+    canvas {
+        display: block;
+    }
 
+    #help-btn {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        background: #ffffff88;
+        border: 1px solid black;
+        color: black;
+        font-size: 1rem;
+        padding: 0.5rem 1.2rem;
+        border-radius: 20px;
+        cursor: pointer;
+        z-index: 1000;
+    }
+    #help-btn:hover {
+        background: black;
+        color: white;
+    }
 
+    #help-modal {
+        display: none;
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0,0,0,0.7);
+        justify-content: center;
+        align-items: center;
+    }
+
+    .help-content {
+        background-color: #1a1a1a;
+        padding: 2rem;
+        border-radius: 15px;
+        text-align: center;
+        color: white;
+        max-width: 300px;
+    }
+
+    #close-help {
+        margin-top: 1rem;
+        padding: 0.4rem 1.2rem;
+        border-radius: 20px;
+        border: 1px solid white;
+        background: transparent;
+        color: white;
+        cursor: pointer;
+        font-size: 1rem;
+    }
+
+    #close-help:hover {
+        background: white;
+        color: black;
+    }
 </style>
 </head>
 <body>
-      <div id="background-canvas"></div>
-      <div class="input-container">
-          <h1>What the Ball!!</h1>
-          <label for="player-count">플레이어 수 (2~8)</label>
+    <div id="background-canvas"></div>
+    <div class="input-container">
+        <h1>What the Ball!!</h1>
+        <label for="player-count">플레이어 수 (2~8)</label>
         <input type="number" id="player-count" min="2" max="8" value="2" />
         <label for="throw-count">공 개수 (1~5)</label>
         <input type="number" id="throw-count" min="1" max="5" value="3" />
-        <button id="assign-btn">🎲 랜덤으로 공 정하기</button>
+        <button id="assign-btn">🎲  랜덤으로 공 정하기</button>
+    </div>
+
+    <button id="help-btn">게임 설명</button>
+
+    <div id="help-modal">
+    <div class="help-content">
+        <p>구름 위에서 하는 예측 불가능 농구 게임! ☁️</p>
+        <p>풍경은 예쁘지만, 실수로 공이 떨어지면 다시 주우러 갈 수가 없어서 눈에 띄는 아무거나 다 주워서 공으로 쓴답니다.</p>
+        <p>랜덤으로 공을 받은 후, 스페이스바를 눌러 공을 던져 골인을 많이 하는 사람이 승리!</p>
+        <p>스페이스바 누르는 길이에 따라 공 던지는 힘을 조절할 수 있어요.</p>
+        <!-- <p>이 게임은 랜덤 농구 게임으로, 친구들과 벌칙을 정하거나 내기를 할 때 사용할 수 있어요.</p> -->
+        <!-- <p>각 플레이어는 무작위로 공을 배정받은 후, 스페이스바를 눌러 공을 던져요.</p> -->
+        <!-- <p>( 스페이스바를 누르는 길이에 따라 공 던지는 힘을 조절할 수 있습니다 )</p> -->
+        <button id="close-help">닫기</button>
+    </div>
     </div>
 
     <div id="players-list"></div>
@@ -225,6 +305,20 @@ canvas {
     goToGameBtn.addEventListener('click', () => {
         window.location.href = '/game.html'; 
     });
+
+    // 게임 설명 버튼 기능
+    const helpBtn = document.getElementById('help-btn');
+    const helpModal = document.getElementById('help-modal');
+    const closeHelp = document.getElementById('close-help');
+
+    helpBtn.addEventListener('click', () => {
+        helpModal.style.display = 'flex';
+    });
+
+    closeHelp.addEventListener('click', () => {
+        helpModal.style.display = 'none';
+    });
+
 </script>
 </body>
 </html>
