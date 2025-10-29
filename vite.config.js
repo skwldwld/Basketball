@@ -1,5 +1,13 @@
 import { defineConfig } from 'vite'
 
 export default defineConfig({
-  base: '/Basketball/', // GitHub repository 이름을 base로 설정
+  base: '/Basketball/',
+  build: {
+    rollupOptions: {
+      input: {
+        main: '/Users/yeji/Desktop/4-1/CG/Basketball/index.html',
+        game: '/Users/yeji/Desktop/4-1/CG/Basketball/game.html'
+      }
+    }
+  }
 })
