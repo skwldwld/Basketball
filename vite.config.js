@@ -9,6 +9,14 @@ export default defineConfig({
         main: resolve(__dirname, 'index.html'),
         game: resolve(__dirname, 'game.html')
       }
+    },
+    assetsInlineLimit: 0,
+    copyPublicDir: true
+  },
+  publicDir: 'src/models',
+  resolve: {
+    alias: {
+      '@models': resolve(__dirname, 'src/models')
     }
   }
 })
