@@ -1,12 +1,13 @@
 import { defineConfig } from 'vite'
+import { resolve } from 'path'
 
 export default defineConfig({
   base: '/Basketball/',
   build: {
     rollupOptions: {
       input: {
-        main: '/Users/yeji/Desktop/4-1/CG/Basketball/index.html',
-        game: '/Users/yeji/Desktop/4-1/CG/Basketball/game.html'
+        main: resolve(__dirname, 'index.html'),
+        game: resolve(__dirname, 'game.html')
       }
     }
   }
