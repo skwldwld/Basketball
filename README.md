@@ -1,6 +1,7 @@
 # WhatTheBall 🏀
 
 ## 게임 소개
+입니다
 WhatTheBall은 Three.js와 Cannon.js를 사용하여 만든 3D 농구 게임입니다. 다양한 종류의 공을 선택하여 농구 골대에 던지는 재미있는 게임입니다.
 
 ## 주요 기능
