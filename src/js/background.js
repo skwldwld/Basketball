@@ -1,6 +1,6 @@
 // background.js
-import * as THREE from "../../node_modules/three/build/three.module.js"
-import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import * as THREE from "three";
+import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 
 let model = null;
 const scene = new THREE.Scene();
