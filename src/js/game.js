@@ -77,48 +77,25 @@ let throwCount = 3;
 let ballMaterial;
 let floorPhysicsMaterial;
 
-// Vite가 build할 때 asset 경로를 dist/assets 기준으로 바꿔주도록 직접 new URL 사용
-const hoopObjPath = new URL(
-  "../models/hoop/basketball_hoop.obj",
-  import.meta.url
-).href;
+const BASE_URL = import.meta.env.BASE_URL;
 
-const hoopTexturePath = new URL(
-  "../models/hoop/basketball_hoop_diffuse_noAO.jpg",
-  import.meta.url
-).href;
+const hoopObjPath = `${BASE_URL}models/hoop/basketball_hoop.obj`;
+const hoopTexturePath = `${BASE_URL}models/hoop/basketball_hoop_diffuse_noAO.jpg`;
 
-const stadiumObjPath = new URL(
-  "../models/basketball-stadium/source/63BasketBallZemin.obj",
-  import.meta.url
-).href;
+const stadiumObjPath = `${BASE_URL}models/basketball-stadium/source/63BasketBallZemin.obj`;
+const stadiumTexturePath = `${BASE_URL}models/basketball-stadium/textures/BasketZemin_Color.png`;
 
-const stadiumTexturePath = new URL(
-  "../models/basketball-stadium/textures/BasketZemin_Color.png",
-  import.meta.url
-).href;
+const bleacherModelPath = `${BASE_URL}models/seating__bleacher/scene.gltf`;
 
-const bleacherModelPath = new URL(
-  "../models/seating__bleacher/scene.gltf",
-  import.meta.url
-).href;
-
-const skyModelPath = new URL(
-  "../models/sky/scene.glb",
-  import.meta.url
-).href;
-
-const skyTexturePath = new URL(
-  "../models/sky/textures/Scene_-_Root_diffuse.jpeg",
-  import.meta.url
-).href;
+const skyModelPath = `${BASE_URL}models/sky/scene.glb`;
+const skyTexturePath = `${BASE_URL}models/sky/textures/Scene_-_Root_diffuse.jpeg`;
 
 const ballModelPaths = {
-  basketball: new URL("../models/basketball/scene.gltf", import.meta.url).href,
-  bowlingball: new URL("../models/bowlingball/scene.gltf", import.meta.url).href,
-  pokeball: new URL("../models/pokeball/scene.gltf", import.meta.url).href,
-  snowball: new URL("../models/snowball/scene.gltf", import.meta.url).href,
-  tomato: new URL("../models/tomato/scene.gltf", import.meta.url).href,
+  basketball: `${BASE_URL}models/basketball/scene.gltf`,
+  bowlingball: `${BASE_URL}models/bowlingball/scene.gltf`,
+  pokeball: `${BASE_URL}models/pokeball/scene.gltf`,
+  snowball: `${BASE_URL}models/snowball/scene.gltf`,
+  tomato: `${BASE_URL}models/tomato/scene.gltf`,
 };
 
 init();
